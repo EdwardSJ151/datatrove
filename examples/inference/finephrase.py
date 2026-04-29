@@ -18,7 +18,6 @@ from generate_data import main as generate_data_main
 
 from datatrove.utils.logging import logger
 
-
 KWARGS: dict[str, Any] = {
     "time": "7-00:00:00",
     "qos": "low",
