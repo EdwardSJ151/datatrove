@@ -18,7 +18,6 @@ from generate_data import main as generate_data_main
 
 from datatrove.utils.logging import logger
 
-
 KWARGS: dict[str, Any] = {
     "time": "7-00:00:00",
     "qos": "low",
@@ -45,7 +44,7 @@ KWARGS: dict[str, Any] = {
     "tasks": 100,
 }
 
-PROMPT_TEMPLATES_ENGLISH: dict[str, str] = {
+PROMPT_TEMPLATES: dict[str, str] = {
     "math": (
         "Rewrite the document to create a mathematical word problem based on the numerical data or relationships in "
         "the text. Provide a step-by-step solution that shows the calculation process clearly. Create a problem that "
@@ -72,39 +71,6 @@ PROMPT_TEMPLATES_ENGLISH: dict[str, str] = {
         "Rewrite the document as a clear, step-by-step tutorial or instructional guide. Use numbered steps or bullet "
         "points where appropriate to enhance clarity. Preserve all essential information while ensuring the style "
         "feels didactic and easy to follow. Output only the tutorial, nothing else.\n\nDocument: [[DOCUMENT]]"
-    ),
-}
-
-
-PROMPT_TEMPLATES: dict[str, str] = {
-    "math": (
-        "Reescreva o documento em português para criar um problema matemático baseado nos dados numéricos ou nas "
-        "relações presentes no texto. Forneça uma solução passo a passo que mostre claramente o processo de cálculo. "
-        "Crie um problema que exija raciocínio em múltiplas etapas e operações aritméticas básicas. Deve incluir a "
-        "pergunta seguida de uma solução detalhada mostrando cada etapa do cálculo. Produza apenas o problema e a "
-        "solução, nada mais.\n\n"
-        "Documento: [[DOCUMENT]]"
-    ),
-    "table": (
-        "Reescreva o documento em português como uma tabela estruturada que organize as principais informações, e em "
-        "seguida gere um par de pergunta e resposta baseado na tabela. Primeiro extraia os dados principais e organize-os "
-        "em um formato de tabela claro com cabeçalhos apropriados usando a sintaxe de tabela em markdown com alinhamento "
-        "correto. Após a tabela, gere uma pergunta relevante que possa ser respondida usando os dados da tabela. Forneça "
-        "uma resposta clara e concisa baseada nas informações da tabela. Produza apenas a tabela seguida do par de "
-        "pergunta e resposta, nada mais.\n\nDocumento: [[DOCUMENT]]"
-    ),
-    "faq": (
-        "Reescreva o documento em português como um FAQ abrangente (Perguntas Frequentes). Extraia ou infira as "
-        "principais perguntas que um leitor teria sobre este tema, e forneça respostas claras e diretas. Organize as "
-        "perguntas logicamente, do básico ao avançado ou por áreas temáticas. Cada resposta deve ser autossuficiente "
-        "e compreensível sem referência a outras respostas. Garanta que o FAQ funcione como um documento independente. "
-        "Produza apenas o FAQ, nada mais.\n\nDocumento: [[DOCUMENT]]"
-    ),
-    "tutorial": (
-        "Reescreva o documento em português como um tutorial claro, passo a passo, ou guia instrucional. Use etapas "
-        "numeradas ou marcadores quando apropriado para melhorar a clareza. Preserve todas as informações essenciais "
-        "enquanto garante que o estilo seja didático e fácil de seguir. Produza apenas o tutorial, nada mais.\n\n"
-        "Documento: [[DOCUMENT]]"
     ),
 }
 
