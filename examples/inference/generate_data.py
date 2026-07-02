@@ -71,7 +71,7 @@ from datatrove.pipeline.inference.dataset_card_generator import (
     InferenceDatasetCardParams,
 )
 from datatrove.pipeline.inference.run_inference import InferenceConfig, InferenceResult, InferenceRunner
-from datatrove.pipeline.readers import HuggingFaceDatasetReader
+from datatrove.pipeline.readers import HuggingFaceDatasetReader, JsonlReader
 from datatrove.pipeline.writers import ParquetWriter
 from datatrove.utils.logging import logger
 
@@ -137,9 +137,14 @@ def main(
     prompt_column: str = "question",
     prompt_template: str | None = None,  # Programmatic callers may also pass ["name", "template"].
     max_examples: int = -1,
+    # Local input (JSONL file). When set, reads from disk instead of the HF dataset above.
+    input_local_path: str | None = None,
     # Output dataset details
     output_dataset_name: str = "s1K-1.1-datatrove",
     output_private: bool = True,
+    # Local output. When set, writes parquet to disk (skips HF upload/datacard); the caller handles any upload.
+    local_output_path: str | None = None,
+    output_subset: str | None = None,  # subset name inserted into the local output path
     # Output logs and tmp files
     output_dir: str = "data",
     # Inference settings
@@ -191,9 +196,11 @@ def main(
     reservation: str | None = None,
 ) -> None:
     """Typer CLI entrypoint that runs the pipeline with provided options."""
-    # Skip HuggingFace setup in benchmark mode
+    # Local output writes parquet to disk; the caller handles any HF upload, so skip HF setup here.
+    is_local_output = local_output_path is not None
+    # Skip HuggingFace setup in benchmark mode or local-output mode
     full_repo_id = None
-    if benchmark_mode:
+    if benchmark_mode or is_local_output:
         enable_monitoring = False
     else:
         check_hf_auth()  # Check authentication early to avoid errors later
@@ -311,11 +318,12 @@ def main(
         speculative_config=spec_raw,
         quantization=quantization,
     )
-    output_path = (
-        f"hf://datasets/{full_repo_id}/{prompt_template_name}"
-        if not benchmark_mode
-        else str(run_path / "output" / "data")
-    )
+    if is_local_output:
+        output_path = str(Path(local_output_path) / output_subset / prompt_template_name)
+    elif not benchmark_mode:
+        output_path = f"hf://datasets/{full_repo_id}/{prompt_template_name}"
+    else:
+        output_path = str(run_path / "output" / "data")
     checkpoints_path = str(run_path / "checkpoints")
     inference_logs_path = run_path / "inference_logs"
     monitor_logs_path = run_path / "monitor_logs"
@@ -371,13 +379,27 @@ def main(
         server_log_folder=str(inference_logs_path / "server_logs"),
     )
 
-    inference_pipeline = [
-        HuggingFaceDatasetReader(
+    if input_local_path is not None:
+        # Read a single local JSONL file. DataFolder.list_files prepends "*" to non-magic
+        # glob patterns, so bracket the first char to force an exact-filename match.
+        input_file = Path(input_local_path)
+        exact_glob = f"[{input_file.name[0]}]{input_file.name[1:]}"
+        reader = JsonlReader(
+            data_folder=str(input_file.parent),
+            glob_pattern=exact_glob,
+            text_key=prompt_column,
+            limit=_compute_reader_limit(max_examples=max_examples, tasks=tasks),
+        )
+    else:
+        reader = HuggingFaceDatasetReader(
             dataset=input_dataset_name,
             dataset_options={"name": input_dataset_config, "split": input_dataset_split},
             text_key=prompt_column,
             limit=_compute_reader_limit(max_examples=max_examples, tasks=tasks),
-        ),
+        )
+
+    inference_pipeline = [
+        reader,
         InferenceRunner(
             rollout_fn=simple_rollout,
             config=inference_config,
@@ -389,8 +411,10 @@ def main(
                 output_folder=output_path,
                 output_filename="${rank}_${chunk_index}.parquet",
                 expand_metadata=True,
-                max_file_size=MB if local_execution else 256 * MB,  # ~1MB for debugging, ~256MB for slurm
-                batch_size=10 if local_execution else 1000,
+                max_file_size=128 * MB
+                if local_execution
+                else 256 * MB,
+                batch_size=500 if local_execution else 1000,
             ),
         ),
     ]
@@ -431,7 +455,7 @@ def main(
         )
         inference_executor.run()
 
-        if not benchmark_mode:
+        if not benchmark_mode and not is_local_output:
             datacard_executor = LocalPipelineExecutor(
                 pipeline=datacard_pipeline,
                 logging_dir=str(datacard_logs_path),
@@ -503,7 +527,7 @@ def main(
 
             monitor_executor.run()
 
-        if not benchmark_mode:
+        if not benchmark_mode and not is_local_output:
             datacard_executor = SlurmPipelineExecutor(
                 pipeline=datacard_pipeline,
                 logging_dir=str(datacard_logs_path),

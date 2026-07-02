@@ -2,6 +2,8 @@
 
 DataTrove is a library to process, filter, and deduplicate text data at very large scale. It provides prebuilt pipeline blocks with a framework to add custom functionality. Pipelines are platform-agnostic, running locally, on Slurm, or on Ray clusters.
 
+For deep, directory-local context, see `CLAUDE.md` files throughout `src/datatrove/` and `examples/`. Start from [CLAUDE.md](CLAUDE.md) for the full index.
+
 See [README.md](README.md) for detailed documentation on terminology, pipeline blocks, executors, and usage examples.
 
 ## Python Environment
