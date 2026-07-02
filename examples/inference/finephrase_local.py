@@ -31,17 +31,14 @@ from utils import check_hf_auth, ensure_repo_exists, resolve_repo_id
 from datatrove.utils.logging import logger
 
 
-# ---------------------------------------------------------------------------
-# User-set paths. Each entry maps a subset name -> a local JSONL file.
-# The subset name becomes a top-level folder in the output tree and HF repo.
-# ---------------------------------------------------------------------------
+# nohup python -u examples/inference/finephrase_local.py > finephrase_local.log 2>&1 &
 INPUT_SUBSETS: dict[str, str] = {
-    "subset_a": "/abs/path/to/file1.jsonl",
-    "subset_b": "/abs/path/to/file2.jsonl",
+    "gigaverbo2": "/raid/aluno_edward/raw_medium_data_pt/gigaverbo2_filtered.jsonl",
+    "pt_fineweb2": "/raid/aluno_edward/raw_medium_data_pt/pt_fineweb2_filtered.jsonl",
 }
 
 # Base local directory for the parquet output tree (later uploaded to HF).
-LOCAL_OUTPUT_DIR = "finephrase_local_output"
+LOCAL_OUTPUT_DIR = "finephrase_pretrain_p1"
 
 
 KWARGS: dict[str, Any] = {
@@ -66,6 +63,8 @@ KWARGS: dict[str, Any] = {
     "local_execution": True,
     "workers": 1,
     "tasks": 1,
+    "tp": 1,
+    "dp": 2,
     # Local output: write parquet to disk (skips per-run HF upload/datacard).
     "local_output_path": LOCAL_OUTPUT_DIR,
 }
